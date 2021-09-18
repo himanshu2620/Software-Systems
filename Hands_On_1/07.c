@@ -21,6 +21,8 @@ void main(int argc, char *argv[]) {
       while(read(srcFd,&c,1)){
         write(desFd,&c,1);
       }
+      close(srcFd);
+      close(desFd);
   }
   else{
     printf("Enter correct arguments\n");
