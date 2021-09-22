@@ -13,7 +13,7 @@ void main(int argc, char *argv[]) {
     char* srcFile = argv[1];
     int val = lstat(srcFile, &fileType);
     if(val == -1){
-      perror("error");
+      perror("lstat");
     }
     else{
       if (S_ISREG(fileType.st_mode)){
