@@ -17,6 +17,7 @@ void main(int argc, char *argv[]) {
     else{
       printf("Error while opening the file\n");
     }
+    close(fd);
   }
   else{
     printf("enter correct arguments\n");
