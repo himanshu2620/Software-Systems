@@ -1,0 +1,1 @@
+write from original fd write from duplicated fd
