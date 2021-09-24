@@ -6,7 +6,7 @@
 
 void main(){
   char* srcTicketFile = "ticketFile.txt";
-  int fd = open(srcTicketFile,O_RDWR,S_IRWXU);
+  int fd = open(srcTicketFile, O_CREAT | O_RDWR,S_IRWXU);
   if(fd!=-1){
     struct flock lock;
     lock.l_type = F_WRLCK;
