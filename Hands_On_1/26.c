@@ -9,5 +9,5 @@
 
 void main(int argc, char *argv[]) {
   char* srcFile = "temp/a.out"; // this is an executable of a program that prints the arguments supplied to it
-  execl(src,src,"there","world",NULL);
+  execl(srcFile,srcFile,"there","world",NULL);
 }
