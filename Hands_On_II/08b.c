@@ -13,6 +13,7 @@ void main(){
     printf("error can't catch the SIGINT signal properly\n");
   }
   else{
-    while(1);
+    sleep(4);
+    printf("No sigint signal within 4 seconds\n", );
   }
 }
