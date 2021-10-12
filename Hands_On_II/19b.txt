@@ -1,0 +1,4 @@
+19. Create a FIFO file by
+ b. mkfifo command
+
+Ans : $ mkfifo myFifo
