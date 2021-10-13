@@ -4,10 +4,12 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <string.h>
+
+
 // run as cc -o write 22a.c
 // then   cc -o read 22b.c
 // then ./write
-// then ./read
+// then ./read in a new terminal
 void main(){
   int currFd;
   int status = mkfifo("myFifo_22",0744);
