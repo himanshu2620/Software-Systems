@@ -4,7 +4,7 @@
 #include <sys/socket.h>
 #include <netinet/ip.h>
 // run as cc -o cli 34a_client.c
-// then   cc -o serv 34_server.c
+// then   cc -o serv 34a_server.c
 // then ./serv
 // then ./cli in a new terminal
 void main(){

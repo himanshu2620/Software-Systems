@@ -3,8 +3,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/ip.h>
-// run as cc -o cli 33client.c
-// then   cc -o serv 33server.c
+// run as cc -o cli 34b_client.c
+// then   cc -o serv 34b_server.c -lpthread
 // then ./serv
 // then ./cli in a new terminal
 void main(){
