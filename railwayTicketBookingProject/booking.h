@@ -3,4 +3,4 @@ struct booking{
   char trainId[10];
   char trainName[30];
   int seatsBooked;
-}
+};

@@ -4,4 +4,4 @@ struct user{
   char password[30];
   int bookings[100];
   int count;
-}
+};
