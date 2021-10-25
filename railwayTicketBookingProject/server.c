@@ -1,8 +1,12 @@
 #include <stdio.h>
 #include <unistd.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/ip.h>
+#include <stdlib.h>
+#include "serverHelper.h"
+
 // run as cc -o cli lient.c
 // then   cc -o serv server.c
 // then ./serv
@@ -25,11 +29,9 @@ void main(){
         int nsd = accept(sfd,(struct sockaddr *) &cli, &clientSize);
         pid_t pid = fork();
         if(pid==0){
-          write(nsd,"Hello from Server",18);
-          printf("Data sent to Client from server\n");
-          char data[20];
-          read(nsd,data,20);
-          printf("Data received from Client is : %s\n", data);
+          write(nsd,"Welcome to Railway Reservation System",38);
+          handleInitialLogin(nsd);
+          close(nsd);
         }
         else{
           close(nsd);

@@ -22,10 +22,15 @@ void main(){
         printf("Couldn't connect to server\n");
       }
       else{
-        char data[20];
-        read(sfd,data,20);
-        printf("Data received from server is : %s\n",data);
-        write(sfd,"Hello from Client",18);
+        char data[500];
+        read(sfd,data,sizeof(data));
+        printf("%s\n",data);
+        read(sfd,data,sizeof(data));
+        printf("%s\n",data);
+
+        char ch[5];
+        scanf("%s", ch);
+        write(sfd, ch, sizeof(ch));
       }
       close(sfd);
     }

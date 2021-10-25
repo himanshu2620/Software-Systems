@@ -1,7 +1,7 @@
 struct user{
-  int userId;
+  char userId[10];
   char userName[30];
   char password[30];
-  char bookings[10][30];
+  int bookings[100];
   int count;
 }
