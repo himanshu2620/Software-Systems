@@ -1,11 +1,14 @@
 #include <stdio.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/ip.h>
 #include <stdlib.h>
 #include "serverHelper.h"
+
 
 // run as cc -o cli lient.c
 // then   cc -o serv server.c

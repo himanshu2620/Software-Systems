@@ -3,6 +3,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/ip.h>
+#include "clientHelper.h"
 // run as cc -o cli client.c
 // then   cc -o serv server.c
 // then ./serv
@@ -22,15 +23,25 @@ void main(){
         printf("Couldn't connect to server\n");
       }
       else{
+        sleep(0.01);
         char data[500];
         read(sfd,data,sizeof(data));
-        printf("%s\n",data);
+        printf("%s",data);
         read(sfd,data,sizeof(data));
-        printf("%s\n",data);
+        printf("%s",data);
 
-        char ch[5];
+        char ch[1];
         scanf("%s", ch);
         write(sfd, ch, sizeof(ch));
+        if(ch[0]=='1'){
+
+        }
+        else if(ch[0]=='2'){
+
+        }
+        else if(ch[0]=='3'){
+          handleAdminClient(sfd);
+        }
       }
       close(sfd);
     }
