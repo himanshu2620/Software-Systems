@@ -37,9 +37,9 @@ void addUserAccount(int nsd){
   struct user currUser;
   read(nsd,&currUser,sizeof(struct user));
 
-  char *path = malloc(strlen("database/users/") + strlen(currUser.userName) + 1);
+  char *path = malloc(strlen("database/users/") + strlen(currUser.userId) + 1);
   strcpy(path,"database/users/");
-  strcat(path,currUser.userName);
+  strcat(path,currUser.userId);
   //strcat(path,currUser.userId);
   int fd = open(path, O_CREAT | O_RDWR , 0744);
   if(fd==-1){
@@ -52,25 +52,42 @@ void addUserAccount(int nsd){
     }
     else{
       write(nsd,"User Account created Successfully",sizeof("User Account created Successfully"));
-      close(fd);
     }
   }
+  close(fd);
   free(path);
+}
+
+void deleteUserAccount(int nsd){
+    struct user currUser;
+    read(nsd,&currUser,sizeof(struct user));
+    char *path = malloc(strlen("database/users/") + strlen(currUser.userId) + 1);
+    strcpy(path,"database/users/");
+    strcat(path,currUser.userId);
+    int fd = unlink(path);
+    if(fd==-1){
+      write(nsd,"Error in deleting as account with supplied user id not found",sizeof("Error in deleting as account with supplied user id not found"));
+    }
+    else{
+      write(nsd,"User Account Deleted Successfully",sizeof("User Account Deleted Successfully"));
+    }
+    close(fd);
+    free(path);
 }
 
 void addTrain(int nsd){
   struct train currTrain;
   read(nsd, &currTrain, sizeof(struct train));
-  char *path = malloc(strlen("database/trains/") + strlen(currTrain.trainName) + 1);
-  strcpy(path,"database/trainName/");
-  strcat(path,currTrain.trainName);
+  char *path = malloc(strlen("database/trains/") + strlen(currTrain.trainId) + 1);
+  strcpy(path,"database/trains/");
+  strcat(path,currTrain.trainId);
 
   int fd = open(path, O_CREAT | O_RDWR , 0744);
   if(fd==-1){
     write(nsd,"Couldn't add this Train",sizeof("Couldn't add this Train"));
   }
   else{
-    int rb = write(fd,&currUser,sizeof(struct user));
+    int rb = write(fd,&currTrain,sizeof(struct train));
     if(rb==-1){
       write(nsd,"Couldn't add this Train",sizeof("Couldn't add this Train"));
     }
@@ -80,6 +97,23 @@ void addTrain(int nsd){
     }
   }
   free(path);
+}
+
+void deleteTrain(int nsd){
+    struct train currTrain;
+    read(nsd,&currTrain,sizeof(struct train));
+    char *path = malloc(strlen("database/trains/") + strlen(currTrain.trainName) + 1);
+    strcpy(path,"database/trains/");
+    strcat(path,currTrain.trainName);
+    int fd = unlink(path);
+    if(fd==-1){
+      write(nsd,"Error in deleting Train details",sizeof("Error in deleting Train details"));
+    }
+    else{
+      write(nsd,"Train details Deleted Successfully",sizeof("Train details Deleted Successfully"));
+    }
+    close(fd);
+    free(path);
 }
 
 void handleAdminUser(int nsd){
@@ -92,7 +126,7 @@ void handleAdminUser(int nsd){
             addUserAccount(nsd);
         }
         else if(choice[0]=='2'){ // delete account
-
+            deleteUserAccount(nsd);
         }
         else if(choice[0]=='3'){ // update account
 
@@ -108,7 +142,7 @@ void handleAdminUser(int nsd){
             addTrain(nsd);
         }
         else if(choice[0]=='2'){ // delete a train
-
+            deleteTrain(nsd);
         }
         else if(choice[0]=='3'){ // update train details
 
@@ -137,6 +171,6 @@ void handleInitialLogin(int nsd){
         handleAdminUser(nsd);
     }
     else{
-      printf("exitting the system now...\n");
+      printf("exiting the system now...\n");
     }
 }

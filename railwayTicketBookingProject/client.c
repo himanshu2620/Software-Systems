@@ -33,13 +33,13 @@ void main(){
         char ch[1];
         scanf("%s", ch);
         write(sfd, ch, sizeof(ch));
-        if(ch[0]=='1'){
-
+        if(ch[0]=='1'){ // User
+            handleUserClient(sfd);
         }
-        else if(ch[0]=='2'){
-
+        else if(ch[0]=='2'){ // Agent
+            handleAgentClient(sfd);
         }
-        else if(ch[0]=='3'){
+        else if(ch[0]=='3'){ // Admin
           handleAdminClient(sfd);
         }
       }

@@ -2,6 +2,5 @@ struct user{
   char userId[10];
   char userName[30];
   char password[30];
-  int bookings[100];
-  int count;
+  int status; // 1 for active , 0 for inactive
 };
