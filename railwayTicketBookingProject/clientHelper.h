@@ -2,8 +2,8 @@
 #include "train.h"
 #include "booking.h"
 
+void handleMainMenu(int);
 void handleUserMenu(int);
-
 void showTrains(int sfd){
     printf("Train details : trainId ----- trainName ------ seatsAvailable ------ active/inactive\n");
     while(1){
@@ -147,7 +147,7 @@ void handleUserClient(int sfd){
 }
 
 void handleAdminClient(int sfd){
-  printf("Enter 1 to add/modify/delete User Details \n");
+  printf("Enter 1 to modify/delete User Details \n");
   printf("Enter 2 to add/modify/delete Train Details \n");
   char ch[1];
   scanf("%s", ch);
@@ -205,25 +205,35 @@ void handleAdminClient(int sfd){
     if(choice[0]=='1'){ // Add a train
       printf("----------------Add a Train Menu--------------\n");
       printf("Enter a unique train id:\n");
-      scanf("%s", currTrain.trainId);
+      scanf("%d", &currTrain.trainId);
       printf("Enter the train name\n");
       scanf("%s", currTrain.trainName);
       printf("Enter the Seats available\n");
       scanf("%d", &currTrain.seatsCount);
 
       write(sfd, &currTrain,sizeof(struct train));
-      char buff[100];
-      read(sfd, buff,sizeof(buff));
-      printf("%s\n",buff);
+      int status;
+      read(sfd, &status,sizeof(status));
+      if(status==1){
+        printf("Successfully added the train\n");
+      }
+      else{
+        printf("Error!!!\n");
+      }
     }
     else if(choice[0] == '2'){ // Delete a Train
       printf("----------------Delete a Train Menu--------------\n");
       printf("Enter the Train Name:\n");
       scanf("%s", currTrain.trainName);
       write(sfd, &currTrain,sizeof(struct train));
-      char buff[200];
-      read(sfd, buff,sizeof(buff));
-      printf("%s\n",buff);
+      int status;
+      read(sfd, &status,sizeof(status));
+      if(status==1){
+        printf("Successfully deleted the train\n");
+      }
+      else{
+        printf("Error!!!\n");
+      }
     }
     else if(choice[0] == '3'){ // Update a Train
 
@@ -236,7 +246,7 @@ void handleAdminClient(int sfd){
     printf("Enter Correct Input\n");
   }
 }
-void signUp(int sfd){
+void handleSignUp(int sfd){
   struct user currUser;
   printf("----------------Add User Account Menu--------------\n");
   printf("Enter your unique user name\n");
@@ -245,16 +255,17 @@ void signUp(int sfd){
   scanf("%s", currUser.password);
 
   write(sfd, &currUser,sizeof(struct user));
-  int status;
-  read(status, &status, sizeof(status));
 
+  int status;
+  read(sfd, &status, sizeof(status));
+  printf("%d\n", status);
   if(status==1){
     printf("Signed Up Successfully\n");
   }
   else{
     printf("Couldn't signUp, user already exists!!!\n");
   }
-  handleUserMenu(sfd);
+  handleMainMenu(sfd);
 }
 
 void handleLogin(int sfd){
@@ -282,7 +293,7 @@ void handleMainMenu(int sfd){
   scanf("%s", choice);
   write(sfd, choice, sizeof(choice));
   if(choice[0]=='1'){
-    signUp(sfd);
+    handleSignUp(sfd);
   }
   else if(choice[0]=='2'){
     handleLogin(sfd);

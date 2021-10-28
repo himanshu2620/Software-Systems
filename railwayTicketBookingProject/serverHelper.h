@@ -76,27 +76,14 @@ void deleteUserAccount(int nsd){
 }
 
 void addTrain(int nsd){
+  int status = 1;
   struct train currTrain;
   read(nsd, &currTrain, sizeof(struct train));
-  char *path = malloc(strlen("database/trains/") + strlen(currTrain.trainId) + 1);
-  strcpy(path,"database/trains/");
-  strcat(path,currTrain.trainId);
-
-  int fd = open(path, O_CREAT | O_RDWR , 0744);
-  if(fd==-1){
-    write(nsd,"Couldn't add this Train",sizeof("Couldn't add this Train"));
-  }
-  else{
-    int rb = write(fd,&currTrain,sizeof(struct train));
-    if(rb==-1){
-      write(nsd,"Couldn't add this Train",sizeof("Couldn't add this Train"));
-    }
-    else{
-      write(nsd,"Added Train Successfully",sizeof("Added Train Successfully"));
-      close(fd);
-    }
-  }
-  free(path);
+  currTrain.status = 1; // train is up and running
+  int fd = open("database/trains.dat", O_CREAT | O_APPEND | O_RDWR , 0666);
+  write(fd, (char* )&currTrain, sizeof(struct train));
+  write(nsd, &status, sizeof(status));
+  //handleAdminUser(nsd);
 }
 
 void deleteTrain(int nsd){
@@ -167,10 +154,28 @@ int checkUserExists(int nsd, char userName[]){
   return flag;
 }
 
+void handleMainMenu(int nsd){
+  char ch[5];
+  read(nsd,ch,sizeof(ch));
+  if(ch[0]=='1'){
+    printf("normal \n");
+    handleNormalUser(nsd);
+  }
+  else if(ch[0]=='2'){
+    printf("agent \n");
+  }
+  else if(ch[0]=='3'){
+    printf("admin \n");
+    handleAdminUser(nsd);
+  }
+  else{
+    printf("exiting the system now...\n");
+  }
+}
+
 void signUp(int nsd){
   struct user currUser;
   read(nsd, &currUser, sizeof(struct user));
-  printf("%s %s\n",currUser.userName , currUser.password);
   int status = 1;
   if(!checkUserExists(nsd, currUser.userName)){
       int fd = open("database/users.dat", O_CREAT | O_APPEND | O_RDWR , 0666);
@@ -182,8 +187,10 @@ void signUp(int nsd){
     status = -1;
   }
   write(nsd, &status, sizeof(status));
-
+  handleMainMenu(nsd);
 }
+
+
 
 void handleInitialLogin(int nsd){
     //write(nsd, welcomeMenu, sizeof(welcomeMenu));
@@ -194,21 +201,6 @@ void handleInitialLogin(int nsd){
       signUp(nsd);
     }
     else if(choice[0]=='2'){
-      char ch[5];
-      read(nsd,ch,sizeof(ch));
-      if(ch[0]=='1'){
-        printf("normal \n");
-        handleNormalUser(nsd);
-      }
-      else if(ch[0]=='2'){
-        printf("agent \n");
-      }
-      else if(ch[0]=='3'){
-        printf("admin \n");
-        handleAdminUser(nsd);
-      }
-      else{
-        printf("exiting the system now...\n");
-      }
+      handleMainMenu(nsd);
     }
 }
