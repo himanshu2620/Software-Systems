@@ -25,23 +25,12 @@ void main(){
       else{
         sleep(0.01);
         char data[500];
-        read(sfd,data,sizeof(data));
-        printf("%s",data);
-        read(sfd,data,sizeof(data));
+        read(sfd,data,sizeof(data)); // Welcome message
         printf("%s",data);
 
-        char ch[1];
-        scanf("%s", ch);
-        write(sfd, ch, sizeof(ch));
-        if(ch[0]=='1'){ // User
-            handleUserClient(sfd);
-        }
-        else if(ch[0]=='2'){ // Agent
-            handleAgentClient(sfd);
-        }
-        else if(ch[0]=='3'){ // Admin
-          handleAdminClient(sfd);
-        }
+        handleMainMenu(sfd);
+
+
       }
       close(sfd);
     }

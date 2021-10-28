@@ -32,7 +32,7 @@ void main(){
         int nsd = accept(sfd,(struct sockaddr *) &cli, &clientSize);
         pid_t pid = fork();
         if(pid==0){
-          write(nsd,"Welcome to Railway Reservation System",38);
+          write(nsd,"Welcome to Railway Reservation System\n",39);
           handleInitialLogin(nsd);
           close(nsd);
         }

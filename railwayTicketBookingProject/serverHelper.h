@@ -37,9 +37,9 @@ void addUserAccount(int nsd){
   struct user currUser;
   read(nsd,&currUser,sizeof(struct user));
 
-  char *path = malloc(strlen("database/users/") + strlen(currUser.userId) + 1);
+  char *path = malloc(strlen("database/users/")  + 1);
   strcpy(path,"database/users/");
-  strcat(path,currUser.userId);
+  //strcat(path,currUser.userId);
   //strcat(path,currUser.userId);
   int fd = open(path, O_CREAT | O_RDWR , 0744);
   if(fd==-1){
@@ -61,9 +61,9 @@ void addUserAccount(int nsd){
 void deleteUserAccount(int nsd){
     struct user currUser;
     read(nsd,&currUser,sizeof(struct user));
-    char *path = malloc(strlen("database/users/") + strlen(currUser.userId) + 1);
+    char *path = malloc(strlen("database/users/")  + 1);
     strcpy(path,"database/users/");
-    strcat(path,currUser.userId);
+    //strcat(path,currUser.userId);
     int fd = unlink(path);
     if(fd==-1){
       write(nsd,"Error in deleting as account with supplied user id not found",sizeof("Error in deleting as account with supplied user id not found"));
@@ -153,24 +153,62 @@ void handleAdminUser(int nsd){
     }
 }
 
+int checkUserExists(int nsd, char userName[]){
+  struct user currUser;
+  int flag = 0;
+  int fd = open("database/users.dat", O_CREAT | O_APPEND | O_RDWR , 0666);
+  while(read(fd, (char* )&currUser, sizeof(struct user))){
+    if(strcmp(userName, currUser.userName)==0){
+      flag = 1;
+      break;
+    }
+  }
+  close(fd);
+  return flag;
+}
+
+void signUp(int nsd){
+  struct user currUser;
+  read(nsd, &currUser, sizeof(struct user));
+  printf("%s %s\n",currUser.userName , currUser.password);
+  int status = 1;
+  if(!checkUserExists(nsd, currUser.userName)){
+      int fd = open("database/users.dat", O_CREAT | O_APPEND | O_RDWR , 0666);
+      currUser.status = 0;
+      currUser.userId = ((rand()%3097)*2) + 1000;
+      write(fd, (char* )&currUser, sizeof(struct user));
+  }
+  else{
+    status = -1;
+  }
+  write(nsd, &status, sizeof(status));
+
+}
 
 void handleInitialLogin(int nsd){
-    write(nsd, welcomeMenu, sizeof(welcomeMenu));
+    //write(nsd, welcomeMenu, sizeof(welcomeMenu));
     sleep(0.01);
-    char ch[5];
-    read(nsd,ch,sizeof(ch));
-    if(ch[0]=='1'){
+    char choice[1];
+    read(nsd, choice, sizeof(choice));
+    if(choice[0]=='1'){
+      signUp(nsd);
+    }
+    else if(choice[0]=='2'){
+      char ch[5];
+      read(nsd,ch,sizeof(ch));
+      if(ch[0]=='1'){
         printf("normal \n");
         handleNormalUser(nsd);
-    }
-    else if(ch[0]=='2'){
+      }
+      else if(ch[0]=='2'){
         printf("agent \n");
-    }
-    else if(ch[0]=='3'){
+      }
+      else if(ch[0]=='3'){
         printf("admin \n");
         handleAdminUser(nsd);
-    }
-    else{
-      printf("exiting the system now...\n");
+      }
+      else{
+        printf("exiting the system now...\n");
+      }
     }
 }
