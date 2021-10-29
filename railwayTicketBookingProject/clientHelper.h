@@ -8,18 +8,24 @@ void handleAdminUserMenu(int);
 void handleAdminTrainMenu(int);
 
 void showTrains(int sfd){
+    struct train currTrain;
+    int stillRead;
+    printf("-----------------Available Trains --------------\n");
     printf("Train details : trainId ----- trainName ------ seatsAvailable ------ active/inactive\n");
-    // while(1){
-    //   struct train currTrain;
-    //   read(sfd, &currTrain, sizeof(struct train));
-    //   printf("%d %s %d %d \n", currTrain.trainId, currTrain.trainName, currTrain.seatsCount , currTrain.status);
-    //   break;
-    // }
+    while(1){
+      read(sfd, &stillRead, sizeof(stillRead));
+      if(stillRead==0){
+        break;
+      }
+      read(sfd, &currTrain, sizeof(struct train));
+      printf("%d %s %d %d \n", currTrain.trainId, currTrain.trainName, currTrain.seatsCount , currTrain.status);
+    }
+    printf("\n");
 }
 
 void bookUserTicket(int sfd, int uid){
   // show trains first
-  //showTrains(sfd);
+  showTrains(sfd);
 
   // ask user it's choices
   struct booking currBooking;
@@ -30,16 +36,11 @@ void bookUserTicket(int sfd, int uid){
   scanf("%d", &currBooking.trainId);
   printf("Enter number of tickets to be booked : \n");
   scanf("%d", &currBooking.seatsBooked);
-
-  printf("%d %d %d\n", uid, currBooking.trainId, currBooking.seatsBooked);
   // send  details to server
-  printf("I'm here 3\n");
-  write(sfd, &currBooking, sizeof(struct booking)); // <-- bug here
-  printf("I'm here 2\n");
+  write(sfd, &currBooking, sizeof(struct booking));
   // read info from server
   int status;
-  printf("I'm here 1\n");
-  read(status, &status, sizeof(status));
+  read(sfd, &status, sizeof(status));
   printf("I'm here\n");
   if(status==1){
     printf("Seats booked Successfully\n");
@@ -51,10 +52,10 @@ void bookUserTicket(int sfd, int uid){
 }
 
 void deleteBookedTicket(int sfd, int uid){
-  char bookingId[10];
+  struct booking bookedTicket;
   printf("Enter booking id to delete the booked ticket\n");
-  scanf("%s", bookingId);
-  write(sfd, bookingId, sizeof(bookingId));
+  scanf("%d", &bookedTicket.bookingId);
+  write(sfd, &bookedTicket, sizeof(struct booking));
   int status;
   read(sfd, &status, sizeof(status));
   if(status == 1){
@@ -73,9 +74,16 @@ void viewUserBookings(int sfd, int uid){
   write(sfd, &userBookings, sizeof(struct booking));
   read(sfd, &status, sizeof(status));
   if(status==1){
-  printf("Booking details : userId-------trainId------bookingID----- trainName ------ seatsBooked ------ status\n");
-  read(sfd, &userBookings, sizeof(struct booking));
-  printf("%d %d %d %s %d %d \n", userBookings.userId, userBookings.trainId, userBookings.bookingId, userBookings.trainName, userBookings.seatsBooked , userBookings.status);
+    printf("Booking details :\n userId-------trainId------bookingID----- trainName ------ seatsBooked ------ status\n");
+    int stillRead;
+    while(1){
+      read(sfd, &stillRead, sizeof(stillRead));
+      if(stillRead==0){
+        break;
+      }
+      read(sfd, &userBookings, sizeof(struct booking));
+      printf("%d %d %d %s %d %d \n", userBookings.userId, userBookings.trainId, userBookings.bookingId, userBookings.trainName, userBookings.seatsBooked , userBookings.status);
+    }
   }
   else{
     printf("Can't find user bookings\n");
@@ -84,15 +92,13 @@ void viewUserBookings(int sfd, int uid){
 }
 
 void updateBookedTickets(int sfd, int uid){
-    char bookingid[10];
-    int newSeatsToBook;
+    struct booking bookedTicket;
     printf("Enter booking id to update booked tickets\n");
-    scanf("%s", bookingid);
+    scanf("%d", &bookedTicket.bookingId);
     printf("Enter new number of seats to be booked\n");
-    scanf("%d", &newSeatsToBook);
+    scanf("%d", &bookedTicket.seatsBooked);
 
-    write(sfd, bookingid, sizeof(bookingid));
-    write(sfd, &newSeatsToBook, sizeof(newSeatsToBook));
+    write(sfd, &bookedTicket, sizeof(struct booking));
 
     int status;
     read(sfd, &status, sizeof(status));
