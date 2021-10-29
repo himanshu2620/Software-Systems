@@ -2,71 +2,142 @@
 #include "train.h"
 #include "booking.h"
 
-char welcomeMenu[] = "Login as:\n1.Normal Account User\n2.Agent Account User\n3.Administrator\n4.Exit\nPlease enter your choice:";
-char normalUserPrompt[] = "Press:\n1 for Booking a Ticket\n2 for Viewing Previous Bookings\n3 for Updating a Booking\n4 to cancel a booking\n0 to exit";
-char trainIdInputMsg[] = "Enter the trainId of the train to book the seat";
-char seatsInputMsg[] = "Enter the number of seats to be booked";
 
 
+void handleAdminUser(int);
+void handleAdminTrain(int);
+void handleNormalUser(int);
+void handleLoggedInUser(int);
 
+void showTrains(int nsd){
 
-void handleNormalUser(int nsd){
-  write(nsd, normalUserPrompt, sizeof(normalUserPrompt)); // show the prompt
-  char ch[1];
-  read(nsd,ch,sizeof(ch));
-  if(ch[0]=='1'){
-    // book  a ticket
-
-    // take input for trainId
-    write(nsd,trainIdInputMsg,sizeof(trainIdInputMsg));
-    char inputTrainId[10];
-    read(nsd,inputTrainId,sizeof(inputTrainId));
-
-    // take input for number of seats to be booked
-    write(nsd,seatsInputMsg,sizeof(seatsInputMsg));
-    char buff[10];
-    read(nsd,buff,sizeof(buff));
-    int seatsToBeBooked = atoi(buff);
-
-    // trainId , userId, seatsBooked
-    // find train and decrement seatsAvailable
-    // create a booking and enter these 3 details
-  }
 }
-void addUserAccount(int nsd){
-  struct user currUser;
-  read(nsd,&currUser,sizeof(struct user));
 
-  char *path = malloc(strlen("database/users/")  + 1);
-  strcpy(path,"database/users/");
-  //strcat(path,currUser.userId);
-  //strcat(path,currUser.userId);
-  int fd = open(path, O_CREAT | O_RDWR , 0744);
-  if(fd==-1){
-    write(nsd,"Couldn't create user account",sizeof("Couldn't create user account"));
-  }
-  else{
-    int rb = write(fd,&currUser,sizeof(struct user));
-    if(rb==-1){
-      write(nsd,"Couldn't create user account",sizeof("Couldn't create user account"));
+void bookUserTicket(int nsd){
+    //showTrains(nsd);
+    struct booking currBooking;
+    printf("I'm here 3\n");
+    read(nsd, &currBooking, sizeof(struct booking));
+    printf("I'm here 2\n");
+    currBooking.bookingId = ((rand()%3097)*2) + 1000;
+    printf("I'm here 1\n");
+    int fd = open("database/trains.dat", O_RDWR);
+    printf("I'm here 0\n");
+    struct train tempTrain;
+    int status = 0;
+    printf("FD: %d\n",fd);
+    while(read(fd, &tempTrain, sizeof(struct train))){
+      if(tempTrain.trainId == currBooking.trainId){
+        if(tempTrain.seatsCount >= currBooking.seatsBooked){ // check for the trainId and Available seats
+          printf("Heyyyyyyyyyyyyyyy\n");
+          tempTrain.seatsCount = tempTrain.seatsCount - currBooking.seatsBooked; // decrement the available seats
+          strcpy(currBooking.trainName,tempTrain.trainName);
+          lseek(fd, -sizeof(struct train), SEEK_CUR);
+          write(fd , (char *)&tempTrain, sizeof(struct train));
+
+          status = 1;
+          int fd1 = open("database/bookings.dat", O_CREAT | O_APPEND | O_RDWR , 0666);
+          write(fd1, &currBooking, sizeof(struct booking));
+          close(fd1);
+          break;
+        }
+      }
     }
-    else{
-      write(nsd,"User Account created Successfully",sizeof("User Account created Successfully"));
+    write(nsd, &status, sizeof(status));
+    close(fd);
+    handleLoggedInUser(nsd);
+}
+
+void viewUserBookings(int nsd){
+    struct booking userBookings;
+    read(nsd, &userBookings, sizeof(struct booking));
+    struct booking temp;
+    int status = 0;
+    int fd = open("database/bookings.dat", O_RDWR , 0666);
+    while(read(fd, &temp, sizeof(struct booking))!=0){
+      if(temp.userId == userBookings.userId){
+        status = 1;
+        write(nsd, &status, sizeof(status));
+        write(nsd, &temp, sizeof(struct booking));
+        break;
+      }
+    }
+    if(status==0){
+      write(nsd, &status, sizeof(status));
+    }
+    close(fd);
+    handleLoggedInUser(nsd);
+}
+
+int checkUserExists(int nsd, char userName[]){
+  struct user currUser;
+  int flag = 0;
+  int fd = open("database/users.dat", O_RDWR , 0666);
+  while(read(fd, (char* )&currUser, sizeof(struct user))){
+    if(strcmp(userName, currUser.userName)==0){
+      flag = 1;
+      break;
     }
   }
   close(fd);
-  free(path);
+  return flag;
+}
+
+int checkValidUser(int nsd, char userName[], char password[]){
+  struct user currUser;
+  int flag = 0;
+  int fd = open("database/users.dat", O_RDWR , 0666);
+  while(read(fd, (char* )&currUser, sizeof(struct user))){
+    if(strcmp(userName, currUser.userName)==0 && strcmp(password, currUser.password)==0){
+      flag = currUser.userId;
+      break;
+    }
+  }
+  close(fd);
+  return flag;
+}
+
+void handleLoggedInUser(int nsd){
+  char ch[1];
+  read(nsd,ch,sizeof(ch));
+  if(ch[0]=='1'){ // book  a ticket
+    bookUserTicket(nsd);
+  }
+  else if(ch[0]=='2'){ // delete a booked ticket
+
+  }
+  else if(ch[0]=='3'){ // view bookings
+    viewUserBookings(nsd);
+  }
+  else if(ch[0]=='4'){ // update a booked ticket
+
+  }
+}
+
+void handleNormalUser(int nsd){
+  struct user currUser;
+  read(nsd, &currUser, sizeof(struct user));
+  int flag = checkValidUser(nsd, currUser.userName, currUser.password);
+  int uid = flag;
+  printf("%d\n",flag);
+  write(nsd, &flag, sizeof(flag));
+  if(flag){
+    handleLoggedInUser(nsd);
+  }
+  else{
+    //handleNormalUser(nsd);
+  }
 }
 
 void deleteUserAccount(int nsd){
-  struct train currUser;
+  struct user currUser;
   read(nsd,&currUser,sizeof(struct user));
   int fd = open("database/users.dat", O_RDWR);
 
-  struct train tempUser;
+  struct user tempUser;
   int status = 0;
   while(read(fd, &tempUser, sizeof(struct user))!=0){
-    if(strcmp(tempUser.trainName,currUser.trainName) == 0 ){
+    if(strcmp(tempUser.userName,currUser.userName) == 0 ){
         tempUser.status = 0;
         status = 1;
         write(fd , &tempUser, sizeof(struct user));
@@ -74,13 +145,49 @@ void deleteUserAccount(int nsd){
   }
   write(nsd, &status, sizeof(status));
   close(fd);
+  handleAdminUser(nsd);
 }
 void updateUserAccount(int nsd){
+  struct user currUser;
+  read(nsd,&currUser,sizeof(struct user));
+  int fd = open("database/users.dat", O_RDWR);
 
+  struct user tempUser;
+  int status = 0;
+  while(read(fd, &tempUser, sizeof(struct user))!=0){
+    if(tempUser.userId == currUser.userId){
+        strcpy(tempUser.userName,currUser.userName);
+        status = 1;
+        write(fd , &tempUser, sizeof(struct user));
+    }
+  }
+  write(nsd, &status, sizeof(status));
+  close(fd);
+  handleAdminUser(nsd);
 }
+
 void searchUserAccount(int nsd){
+  struct user currUser;
+  read(nsd,&currUser,sizeof(struct user));
+  int fd = open("database/users.dat", O_RDWR);
 
+  struct user tempUser;
+  int status = 0;
+  while(read(fd, &tempUser, sizeof(struct user))!=0){
+    if(strcmp(tempUser.userName,currUser.userName) == 0 ){
+        status = 1;
+        write(nsd, &status, sizeof(status));
+        write(nsd , &tempUser, sizeof(struct user));
+        break;
+    }
+  }
+  if(status == 0){
+    write(nsd, &status, sizeof(status));
+  }
+  close(fd);
+  handleAdminUser(nsd);
 }
+
 void addTrain(int nsd){
   int status = 1;
   struct train currTrain;
@@ -90,7 +197,7 @@ void addTrain(int nsd){
   write(fd, (char* )&currTrain, sizeof(struct train));
   write(nsd, &status, sizeof(status));
   close(fd);
-  //handleAdminUser(nsd);
+  handleAdminTrain(nsd);
 }
 
 void deleteTrain(int nsd){
@@ -99,16 +206,18 @@ void deleteTrain(int nsd){
     int fd = open("database/trains.dat", O_RDWR);
 
     struct train tempTrain;
-    int status = 0;
+    int stat = 0;
     while(read(fd, &tempTrain, sizeof(struct train))!=0){
       if(strcmp(tempTrain.trainName,currTrain.trainName) == 0 ){
-          tempTrain.status = 0;
-          status = 1;
+          int newStatus = 0;
+          tempTrain.status = newStatus;
+          stat = 1;
           write(fd , &tempTrain, sizeof(struct train));
       }
     }
-    write(nsd, &status, sizeof(status));
+    write(nsd, &stat, sizeof(stat));
     close(fd);
+    handleAdminTrain(nsd);
 }
 
 void updateTrain(int nsd){
@@ -120,13 +229,14 @@ void updateTrain(int nsd){
   int status = 0;
   while(read(fd, &tempTrain, sizeof(struct train))!=0){
     if(tempTrain.trainId == currTrain.trainId){
-        tempTrain.trainName = currTrain.trainName;
+        strcpy(tempTrain.trainName, currTrain.trainName);
         status = 1;
         write(fd , &tempTrain, sizeof(struct train));
     }
   }
   write(nsd, &status, sizeof(status));
   close(fd);
+  handleAdminTrain(nsd);
 }
 
 void searchTrain(int nsd){
@@ -148,58 +258,52 @@ void searchTrain(int nsd){
     write(nsd, &status, sizeof(status));
   }
   close(fd);
+  handleAdminTrain(nsd);
 }
 
 void handleAdminUser(int nsd){
+  char choice[1];
+  read(nsd,choice,sizeof(choice));
+  if(choice[0]=='1'){ // delete account
+      deleteUserAccount(nsd);
+  }
+  else if(choice[0]=='2'){ // update account
+      updateUserAccount(nsd);
+  }
+  else if(choice[0]=='3'){ // search for an account
+      searchUserAccount(nsd);
+  }
+}
+
+void handleAdminTrain(int nsd){
+  char choice[1];
+  read(nsd,choice,sizeof(choice));
+  if(choice[0]=='1'){ // Add a train account
+      addTrain(nsd);
+  }
+  else if(choice[0]=='2'){ // delete a train
+      deleteTrain(nsd);
+  }
+  else if(choice[0]=='3'){ // update train details
+      updateTrain(nsd);
+  }
+  else if(choice[0]=='4'){ // search for a train
+      searchTrain(nsd);
+  }
+}
+
+void handleAdmin(int nsd){
     char ch[1];
     read(nsd,ch,sizeof(ch));
     if(ch[0]=='1'){ // for modifying User accounts
-        char choice[1];
-        read(nsd,choice,sizeof(choice));
-        if(choice[0]=='1'){ // Add account
-            addUserAccount(nsd);
-        }
-        else if(choice[0]=='2'){ // delete account
-            deleteUserAccount(nsd);
-        }
-        else if(choice[0]=='3'){ // update account
-            updateUserAccount(nsd);
-        }
-        else if(choice[0]=='4'){ // search for an account
-            searchUserAccount(nsd);
-        }
+        handleAdminUser(nsd);
     }
     else if(ch[0]=='2'){ // for modifying Train info
-        char choice[1];
-        read(nsd,choice,sizeof(choice));
-        if(choice[0]=='1'){ // Add a train account
-            addTrain(nsd);
-        }
-        else if(choice[0]=='2'){ // delete a train
-            deleteTrain(nsd);
-        }
-        else if(choice[0]=='3'){ // update train details
-            updateTrain(nsd);
-        }
-        else if(choice[0]=='4'){ // search for a train
-            searchTrain(nsd);
-        }
+        handleAdminTrain(nsd);
     }
 }
 
-int checkUserExists(int nsd, char userName[]){
-  struct user currUser;
-  int flag = 0;
-  int fd = open("database/users.dat", O_CREAT | O_APPEND | O_RDWR , 0666);
-  while(read(fd, (char* )&currUser, sizeof(struct user))){
-    if(strcmp(userName, currUser.userName)==0){
-      flag = 1;
-      break;
-    }
-  }
-  close(fd);
-  return flag;
-}
+
 
 void handleMainMenu(int nsd){
   char ch[5];
@@ -213,7 +317,7 @@ void handleMainMenu(int nsd){
   }
   else if(ch[0]=='3'){
     printf("admin \n");
-    handleAdminUser(nsd);
+    handleAdmin(nsd);
   }
   else{
     printf("exiting the system now...\n");
@@ -226,7 +330,7 @@ void signUp(int nsd){
   int status = 1;
   if(!checkUserExists(nsd, currUser.userName)){
       int fd = open("database/users.dat", O_CREAT | O_APPEND | O_RDWR , 0666);
-      currUser.status = 0;
+      currUser.status = 1;
       currUser.userId = ((rand()%3097)*2) + 1000;
       write(fd, (char* )&currUser, sizeof(struct user));
   }
