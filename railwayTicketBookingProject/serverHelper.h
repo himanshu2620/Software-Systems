@@ -59,22 +59,28 @@ void addUserAccount(int nsd){
 }
 
 void deleteUserAccount(int nsd){
-    struct user currUser;
-    read(nsd,&currUser,sizeof(struct user));
-    char *path = malloc(strlen("database/users/")  + 1);
-    strcpy(path,"database/users/");
-    //strcat(path,currUser.userId);
-    int fd = unlink(path);
-    if(fd==-1){
-      write(nsd,"Error in deleting as account with supplied user id not found",sizeof("Error in deleting as account with supplied user id not found"));
-    }
-    else{
-      write(nsd,"User Account Deleted Successfully",sizeof("User Account Deleted Successfully"));
-    }
-    close(fd);
-    free(path);
-}
+  struct train currUser;
+  read(nsd,&currUser,sizeof(struct user));
+  int fd = open("database/users.dat", O_RDWR);
 
+  struct train tempUser;
+  int status = 0;
+  while(read(fd, &tempUser, sizeof(struct user))!=0){
+    if(strcmp(tempUser.trainName,currUser.trainName) == 0 ){
+        tempUser.status = 0;
+        status = 1;
+        write(fd , &tempUser, sizeof(struct user));
+    }
+  }
+  write(nsd, &status, sizeof(status));
+  close(fd);
+}
+void updateUserAccount(int nsd){
+
+}
+void searchUserAccount(int nsd){
+
+}
 void addTrain(int nsd){
   int status = 1;
   struct train currTrain;
@@ -83,24 +89,65 @@ void addTrain(int nsd){
   int fd = open("database/trains.dat", O_CREAT | O_APPEND | O_RDWR , 0666);
   write(fd, (char* )&currTrain, sizeof(struct train));
   write(nsd, &status, sizeof(status));
+  close(fd);
   //handleAdminUser(nsd);
 }
 
 void deleteTrain(int nsd){
     struct train currTrain;
     read(nsd,&currTrain,sizeof(struct train));
-    char *path = malloc(strlen("database/trains/") + strlen(currTrain.trainName) + 1);
-    strcpy(path,"database/trains/");
-    strcat(path,currTrain.trainName);
-    int fd = unlink(path);
-    if(fd==-1){
-      write(nsd,"Error in deleting Train details",sizeof("Error in deleting Train details"));
+    int fd = open("database/trains.dat", O_RDWR);
+
+    struct train tempTrain;
+    int status = 0;
+    while(read(fd, &tempTrain, sizeof(struct train))!=0){
+      if(strcmp(tempTrain.trainName,currTrain.trainName) == 0 ){
+          tempTrain.status = 0;
+          status = 1;
+          write(fd , &tempTrain, sizeof(struct train));
+      }
     }
-    else{
-      write(nsd,"Train details Deleted Successfully",sizeof("Train details Deleted Successfully"));
-    }
+    write(nsd, &status, sizeof(status));
     close(fd);
-    free(path);
+}
+
+void updateTrain(int nsd){
+  struct train currTrain;
+  read(nsd,&currTrain,sizeof(struct train));
+  int fd = open("database/trains.dat", O_RDWR);
+
+  struct train tempTrain;
+  int status = 0;
+  while(read(fd, &tempTrain, sizeof(struct train))!=0){
+    if(tempTrain.trainId == currTrain.trainId){
+        tempTrain.trainName = currTrain.trainName;
+        status = 1;
+        write(fd , &tempTrain, sizeof(struct train));
+    }
+  }
+  write(nsd, &status, sizeof(status));
+  close(fd);
+}
+
+void searchTrain(int nsd){
+  struct train currTrain;
+  read(nsd,&currTrain,sizeof(struct train));
+  int fd = open("database/trains.dat", O_RDWR);
+
+  struct train tempTrain;
+  int status = 0;
+  while(read(fd, &tempTrain, sizeof(struct train))!=0){
+    if(strcmp(tempTrain.trainName,currTrain.trainName) == 0 ){
+        status = 1;
+        write(nsd, &status, sizeof(status));
+        write(nsd, &tempTrain, sizeof(struct train));
+        break;
+    }
+  }
+  if(status==0){
+    write(nsd, &status, sizeof(status));
+  }
+  close(fd);
 }
 
 void handleAdminUser(int nsd){
@@ -116,10 +163,10 @@ void handleAdminUser(int nsd){
             deleteUserAccount(nsd);
         }
         else if(choice[0]=='3'){ // update account
-
+            updateUserAccount(nsd);
         }
         else if(choice[0]=='4'){ // search for an account
-
+            searchUserAccount(nsd);
         }
     }
     else if(ch[0]=='2'){ // for modifying Train info
@@ -132,10 +179,10 @@ void handleAdminUser(int nsd){
             deleteTrain(nsd);
         }
         else if(choice[0]=='3'){ // update train details
-
+            updateTrain(nsd);
         }
         else if(choice[0]=='4'){ // search for a train
-
+            searchTrain(nsd);
         }
     }
 }

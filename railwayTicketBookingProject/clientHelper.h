@@ -200,9 +200,10 @@ void handleAdminClient(int sfd){
     char choice[1];
     scanf("%s", choice);
     write(sfd, choice, sizeof(choice));
-    struct train currTrain;
+
 
     if(choice[0]=='1'){ // Add a train
+      struct train currTrain;
       printf("----------------Add a Train Menu--------------\n");
       printf("Enter a unique train id:\n");
       scanf("%d", &currTrain.trainId);
@@ -222,8 +223,9 @@ void handleAdminClient(int sfd){
       }
     }
     else if(choice[0] == '2'){ // Delete a Train
+      struct train currTrain;
       printf("----------------Delete a Train Menu--------------\n");
-      printf("Enter the Train Name:\n");
+      printf("Enter the Train Name that you want to delete:\n");
       scanf("%s", currTrain.trainName);
       write(sfd, &currTrain,sizeof(struct train));
       int status;
@@ -232,14 +234,43 @@ void handleAdminClient(int sfd){
         printf("Successfully deleted the train\n");
       }
       else{
-        printf("Error!!!\n");
+        printf("Error in deleting the train!!!\n");
       }
     }
     else if(choice[0] == '3'){ // Update a Train
-
+      struct train currTrain;
+      printf("----------------Update a Train Menu--------------\n");
+      printf("Enter the train id for which you want to update the details\n");
+      scanf("%d", &currTrain.trainId);
+      printf("Enter the new train name:\n");
+      scanf("%s", currTrain.trainName);
+      write(sfd, &currTrain,sizeof(struct train));
+      int status;
+      read(sfd, &status,sizeof(status));
+      if(status==1){
+        printf("Successfully Updated the train name\n");
+      }
+      else{
+        printf("Error!!!\n");
+      }
     }
     else if(choice[0] == '4'){ // search for a Train
-
+      struct train currTrain;
+      printf("----------------Search for a Train--------------\n");
+      printf("Enter the train name:\n");
+      scanf("%s", currTrain.trainName);
+      write(sfd, &currTrain,sizeof(struct train));
+      int status;
+      read(sfd, &status,sizeof(status));
+      if(status==1){
+        read(sfd, &currTrain, sizeof(struct train));
+        printf("Train with the name found and the details are: \n");
+        printf("TrainId ------- trainName -------- seatsAvailable -------- Active/inactive\n");
+        printf("%d %s %d %d\n", currTrain.trainId, currTrain.trainName, currTrain.seatsCount, currTrain.status);
+      }
+      else{
+        printf("Train with the given name not found !!!\n");
+      }
     }
   }
   else{
