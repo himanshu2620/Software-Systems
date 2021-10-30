@@ -8,6 +8,10 @@ void handleAdminUser(int);
 void handleAdminTrain(int);
 void handleNormalUser(int);
 void handleLoggedInUser(int);
+void handleInitialLogin(int);
+void deleteAgentBookedTicket(int);
+void viewAgentBookings(int);
+void updateAgentBookings(int);
 
 void showTrains(int nsd){
   int fd = open("database/trains.dat", O_RDWR , 0666);
@@ -208,6 +212,109 @@ void handleNormalUser(int nsd){
   }
 }
 
+void bookAgentTicket(int nsd){
+
+  showTrains(nsd);
+  struct booking currBooking;
+  read(nsd, &currBooking, sizeof(struct booking));
+
+  struct flock trainLock;
+  struct flock bookingLock;
+
+  // set booking id
+  srand(time(0));
+  currBooking.bookingId = (rand()%3001) + 1000;
+  currBooking.status = 1;
+  int fd = open("database/trains.dat", O_RDWR);
+  struct train tempTrain;
+  int status = 0;
+  printf("FD: %d\n",fd);
+  while(read(fd, &tempTrain, sizeof(struct train))){
+    if(tempTrain.trainId == currBooking.trainId){
+      if(tempTrain.seatsCount >= currBooking.seatsBooked){ // check for the trainId and Available seats
+        // take lock on CS
+        lseek(fd,-sizeof(struct train),SEEK_CUR);
+				trainLock.l_type = F_WRLCK;
+				trainLock.l_whence = SEEK_CUR;
+				trainLock.l_start = 0;
+				trainLock.l_len = sizeof(struct train);
+        int ts = fcntl(fd, F_SETLK, &trainLock);
+
+        bookingLock.l_type = F_WRLCK;
+        bookingLock.l_whence = SEEK_SET;
+        bookingLock.l_start = 0; // lock offset
+        bookingLock.l_len = 0; // lock all bytes
+        int fd1 = open("database/bookings.dat", O_CREAT | O_APPEND | O_RDWR , 0666);
+        int bs = fcntl(fd1, F_SETLK, &bookingLock);
+        if(ts!=-1 && bs!=-1 ){
+          tempTrain.seatsCount = tempTrain.seatsCount - currBooking.seatsBooked; // decrement the available seats
+          strcpy(currBooking.trainName,tempTrain.trainName);
+          write(fd , (char *)&tempTrain, sizeof(struct train));
+          status = 1;
+          write(fd1, &currBooking, sizeof(struct booking));
+          trainLock.l_type = F_UNLCK;
+          bookingLock.l_type = F_UNLCK;
+          fcntl(fd, F_SETLK, &trainLock);
+          fcntl(fd1, F_SETLK, &bookingLock);
+        }
+        close(fd1);
+        break;
+      }
+    }
+  }
+  write(nsd, &status, sizeof(status));
+  close(fd);
+  handleLoggedInUser(nsd);
+}
+
+void handleLoggedInAgent(int nsd){
+  char ch[1];
+  read(nsd,ch,sizeof(ch));
+
+  if(ch[0]=='1'){ // book  a ticket
+    bookAgentTicket(nsd);
+  }
+  else if(ch[0]=='2'){ // delete a booked ticket
+    //deleteAgentBookedTicket(nsd);
+  }
+  else if(ch[0]=='3'){ // view bookings
+    //viewAgentBookings(nsd);
+  }
+  else if(ch[0]=='4'){ // update a booked ticket
+    //updateAgentBookings(nsd);
+  }
+}
+
+int checkValidAgent(int nsd, char userName[], char password[]){
+  struct user currUser;
+  int flag = 0;
+  int fd = open("database/users.dat", O_RDWR , 0666);
+  while(read(fd, (char* )&currUser, sizeof(struct user))){
+    if(strcmp(userName, currUser.userName)==0 && strcmp(password, currUser.password)==0){
+      flag = currUser.userId;
+      break;
+    }
+  }
+  close(fd);
+  return flag;
+}
+
+void handleAgentUser(int nsd){
+  struct user currUser;
+  read(nsd, &currUser, sizeof(struct user));
+  int flag = checkValidAgent(nsd, currUser.userName, currUser.password);
+  //
+  int uid = flag;
+  printf("%d\n",flag);
+  write(nsd, &flag, sizeof(flag));
+  if(flag){
+    handleLoggedInAgent(nsd);
+  }
+  else{
+    //handleNormalUser(nsd);
+  }
+}
+
 void deleteUserAccount(int nsd){
   struct user currUser;
   read(nsd,&currUser,sizeof(struct user));
@@ -397,6 +504,7 @@ void handleMainMenu(int nsd){
   }
   else if(ch[0]=='2'){
     printf("agent \n");
+    handleAgentUser(nsd);
   }
   else if(ch[0]=='3'){
     printf("admin \n");
@@ -408,20 +516,28 @@ void handleMainMenu(int nsd){
 }
 
 void signUp(int nsd){
+  char choice[1];
+  read(nsd, choice, sizeof(choice));
+  int flag = 0;
+  if(choice[0]=='2'){
+    flag = 1; // set flag as 1 for Agent signUp
+  }
   struct user currUser;
   read(nsd, &currUser, sizeof(struct user));
   int status = 1;
   if(!checkUserExists(nsd, currUser.userName)){
+      srand(time(0));
       int fd = open("database/users.dat", O_CREAT | O_APPEND | O_RDWR , 0666);
       currUser.status = 1;
       currUser.userId = ((rand()%3097)*2) + 1000;
+      currUser.type = flag;
       write(fd, (char* )&currUser, sizeof(struct user));
   }
   else{
     status = -1;
   }
   write(nsd, &status, sizeof(status));
-  handleMainMenu(nsd);
+  handleInitialLogin(nsd);
 }
 
 

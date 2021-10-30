@@ -6,6 +6,7 @@ void handleMainMenu(int);
 void handleUserMenu(int,int);
 void handleAdminUserMenu(int);
 void handleAdminTrainMenu(int);
+void handleAgentUserMenu(int,int);
 
 void showTrains(int sfd){
     struct train currTrain;
@@ -208,8 +209,8 @@ void searchUserAccount(int sfd){
     struct user currUser;
     read(sfd, &currUser, sizeof(struct user));
     printf("User with the name found and the details are: \n");
-    printf("UserId ------- userName -------- password -------- Active/inactive\n");
-    printf("%d %s %s %d\n", currUser.userId, currUser.userName, currUser.password, currUser.status);
+    printf("UserId ------- userName -------- password -------- Active/inactive--------Agent(1)/Normal User(0)\n");
+    printf("%d %s %s %d %d\n", currUser.userId, currUser.userName, currUser.password, currUser.status, currUser.type);
   }
   else{
     printf("Can't find any account with the entered user name !!!\n");
@@ -355,7 +356,7 @@ void handleAdminClient(int sfd){
     printf("Enter Correct Input\n");
   }
 }
-void handleSignUp(int sfd){
+void handleUserSignUp(int sfd){
   struct user currUser;
   printf("----------------Add User Account Menu--------------\n");
   printf("Enter your unique user name\n");
@@ -377,6 +378,165 @@ void handleSignUp(int sfd){
   handleMainMenu(sfd);
 }
 
+void handleAgentSignup(int sfd){
+  struct user currUser;
+  printf("----------------Add Agent Account Menu--------------\n");
+  printf("Enter your unique user name\n");
+  scanf("%s", currUser.userName);
+  printf("Enter your password\n");
+  scanf("%s", currUser.password);
+
+  write(sfd, &currUser,sizeof(struct user));
+
+  int status;
+  read(sfd, &status, sizeof(status));
+  printf("%d\n", status);
+  if(status==1){
+    printf("Signed Up Successfully\n");
+  }
+  else{
+    printf("Couldn't signUp, user already exists!!!\n");
+  }
+  handleMainMenu(sfd);
+}
+
+void bookAgentTicket(int sfd, int uid){
+  // show trains first
+  showTrains(sfd);
+
+  // ask user it's choices
+  struct booking currBooking;
+  int trainid;
+  int seatsToBeBooked;
+  currBooking.userId = uid;
+  printf("Enter train id to book a ticket : \n");
+  scanf("%d", &currBooking.trainId);
+  printf("Enter number of tickets to be booked : \n");
+  scanf("%d", &currBooking.seatsBooked);
+  // send  details to server
+  write(sfd, &currBooking, sizeof(struct booking));
+  // read info from server
+  int status;
+  read(sfd, &status, sizeof(status));
+  printf("I'm here\n");
+  if(status==1){
+    printf("Seats booked Successfully\n");
+  }
+  else{
+    printf("Couldn't book seats!!!\n");
+  }
+  handleAgentUserMenu(sfd, uid);
+}
+
+void deleteAgentBookedTicket(int sfd, int uid){
+  struct booking bookedTicket;
+  printf("Enter booking id to delete the booked ticket\n");
+  scanf("%d", &bookedTicket.bookingId);
+  write(sfd, &bookedTicket, sizeof(struct booking));
+  int status;
+  read(sfd, &status, sizeof(status));
+  if(status == 1){
+    printf("Tickets deleted Successfully\n");
+  }
+  else{
+    printf("Error in deleting the booked ticket\n");
+  }
+  handleAgentUserMenu(sfd,uid);
+}
+
+void viewAgentUserBookings(int sfd, int uid){
+  int status;
+  struct booking userBookings;
+  userBookings.userId = uid;
+  write(sfd, &userBookings, sizeof(struct booking));
+  read(sfd, &status, sizeof(status));
+  if(status==1){
+    printf("Booking details :\n userId-------trainId------bookingID----- trainName ------ seatsBooked ------ status\n");
+    int stillRead;
+    while(1){
+      read(sfd, &stillRead, sizeof(stillRead));
+      if(stillRead==0){
+        break;
+      }
+      read(sfd, &userBookings, sizeof(struct booking));
+      printf("%d %d %d %s %d %d \n", userBookings.userId, userBookings.trainId, userBookings.bookingId, userBookings.trainName, userBookings.seatsBooked , userBookings.status);
+    }
+  }
+  else{
+    printf("Can't find user bookings\n");
+  }
+  handleAgentUserMenu(sfd,uid);
+}
+
+void updateAgentBookedTickets(int sfd, int uid){
+  struct booking bookedTicket;
+  printf("Enter booking id to update booked tickets\n");
+  scanf("%d", &bookedTicket.bookingId);
+  printf("Enter new number of seats to be booked\n");
+  scanf("%d", &bookedTicket.seatsBooked);
+
+  write(sfd, &bookedTicket, sizeof(struct booking));
+
+  int status;
+  read(sfd, &status, sizeof(status));
+  if(status == 1){
+    printf("Tickets Updated Successfully\n");
+  }
+  else{
+    printf("Error in updating the booked tickets\n");
+  }
+  handleAgentUserMenu(sfd,uid);
+}
+
+void handleAgentUserMenu(int sfd, int uid){
+  printf("Enter 1 to book a ticket\n");
+  printf("Enter 2 to cancel a booked ticket\n");
+  printf("Enter 3 to view your Previous bookings\n");
+  printf("Enter 4 to update a booked ticket\n");
+  printf("Enter 0 to exit\n");
+  /// take user's choice
+  char ch[1];
+  scanf("%s", ch);
+  write(sfd, ch, sizeof(ch));
+
+  if(ch[0]=='1'){
+    bookAgentTicket(sfd, uid);
+  }
+  else if(ch[0]=='2'){
+    deleteAgentBookedTicket(sfd, uid);
+  }
+  else if(ch[0]=='3'){
+    viewAgentUserBookings(sfd, uid);
+  }
+  else if(ch[0]=='4'){
+    updateAgentBookedTickets(sfd, uid);
+  }
+}
+
+void handleAgentClient(int sfd){
+  struct user currUser;
+  int status;
+  printf("Enter your user name\n");
+  scanf("%s", currUser.userName);
+  printf("Enter your password\n");
+  scanf("%s", currUser.password);
+
+  // send details to server
+  write(sfd, &currUser,sizeof(struct user));
+
+  // check for Successful login
+  read(sfd, &status, sizeof(status));
+
+  if(status!=0){
+    int uid = status;
+    printf("Successfully logged in!!!\n");
+    handleAgentUserMenu(sfd,uid);
+  }
+  else{
+    printf("Error in your details\n");
+  }
+}
+
 void handleLogin(int sfd){
   char welcomeMenu[] = "Login as:\n1.Normal Account User\n2.Agent Account User\n3.Administrator\n4.Exit\nPlease enter your choice:";
   printf("%s", welcomeMenu);
@@ -388,15 +548,32 @@ void handleLogin(int sfd){
       handleUserClient(sfd);
   }
   else if(ch[0]=='2'){ // Agent
-      //handleAgentClient(sfd);
+      handleAgentClient(sfd);
   }
   else if(ch[0]=='3'){ // Admin
     handleAdminClient(sfd);
   }
 }
 
+void handleSignUp(int sfd){
+  printf("Enter 1 to Signup As a User\n");
+  printf("Enter 2 to Signup As a Agent\n");
+  char choice[1];
+  scanf("%s", choice);
+  write(sfd, choice, sizeof(choice));
+  if(choice[0]=='1'){
+    handleUserSignUp(sfd);
+  }
+  else if(choice[0]=='2'){
+    handleAgentSignup(sfd);
+  }
+  else{
+    printf("Error you didn't enter a valid input\n");
+  }
+}
+
 void handleMainMenu(int sfd){
-  printf("Enter 1 to Signup As a user\n");
+  printf("Enter 1 to Signup As a User/Agent\n");
   printf("Enter 2 to Login as an Admin/User/Agent\n");
   char choice[1];
   scanf("%s", choice);

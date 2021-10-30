@@ -7,6 +7,7 @@
 #include <sys/socket.h>
 #include <netinet/ip.h>
 #include <stdlib.h>
+#include <time.h>
 #include "serverHelper.h"
 
 
