@@ -2,8 +2,6 @@
 #include "train.h"
 #include "booking.h"
 
-
-
 void handleAdminUser(int);
 void handleAdminTrain(int);
 void handleNormalUser(int);
@@ -14,6 +12,7 @@ void deleteAgentBookedTicket(int);
 void viewAgentBookings(int);
 void updateAgentBookings(int);
 int updateAgentTrainSeats(int,int,int);
+
 
 void showTrains(int nsd){
   int fd = open("database/trains.dat", O_RDWR , 0666);
@@ -41,7 +40,7 @@ void bookUserTicket(int nsd){
     while(read(fd, &tempTrain, sizeof(struct train))){
       if(tempTrain.trainId == currBooking.trainId){
         if(tempTrain.seatsCount >= currBooking.seatsBooked){ // check for the trainId and Available seats
-          printf("Heyyyyyyyyyyyyyyy\n");
+
           tempTrain.seatsCount = tempTrain.seatsCount - currBooking.seatsBooked; // decrement the available seats
           strcpy(currBooking.trainName,tempTrain.trainName);
           lseek(fd, -sizeof(struct train), SEEK_CUR);
@@ -119,26 +118,6 @@ int checkValidUser(int nsd, char userName[], char password[]){
   return flag;
 }
 
-void deleteBookedTicket(int nsd){
-    struct booking bookedTicket;
-    struct booking temp;
-    int status = 0;
-    read(nsd, &bookedTicket, sizeof(struct booking));
-    int fd = open("database/bookings.dat",O_RDWR);
-    while(read(fd, &temp, sizeof(struct booking))!=0){
-      if(temp.bookingId == bookedTicket.bookingId){
-          temp.status = 0;
-          lseek(fd, -sizeof(struct booking), SEEK_CUR);
-          write(fd , &temp, sizeof(struct booking));
-          status = 1;
-          break;
-      }
-    }
-    write(nsd, &status, sizeof(status));
-    close(fd);
-    handleLoggedInUser(nsd);
-}
-
 int updateTrainSeats(int nsd, int trainId, int seatsChange){
   int fd = open("database/trains.dat", O_RDWR);
   struct train tempTrain;
@@ -155,6 +134,29 @@ int updateTrainSeats(int nsd, int trainId, int seatsChange){
     }
   }
   return status;
+}
+
+void deleteBookedTicket(int nsd){
+    struct booking bookedTicket;
+    struct booking temp; //
+    int status = 0;
+    read(nsd, &bookedTicket, sizeof(struct booking));
+    int fd = open("database/bookings.dat",O_RDWR);
+    while(read(fd, &temp, sizeof(struct booking))!=0){
+      if(temp.bookingId == bookedTicket.bookingId){
+          int change = -(temp.seatsBooked); // add these seats to the appropriate train in which they were booked
+          int trainId = temp.trainId;
+          int canBook = updateTrainSeats(nsd, trainId, change);
+          temp.status = 0;
+          lseek(fd, -sizeof(struct booking), SEEK_CUR);
+          write(fd , &temp, sizeof(struct booking));
+          status = 1;
+          break;
+      }
+    }
+    write(nsd, &status, sizeof(status));
+    close(fd);
+    handleLoggedInUser(nsd);
 }
 
 void updateUserBookings(int nsd){
@@ -301,7 +303,7 @@ void deleteAgentBookedTicket(int nsd){
   }
   write(nsd, &status, sizeof(status));
   close(fd);
-  handleLoggedInUser(nsd);
+  handleLoggedInAgent(nsd);
 }
 
 void viewAgentBookings(int nsd){
@@ -630,6 +632,14 @@ void handleAdminTrain(int nsd){
 }
 
 void handleAdmin(int nsd){
+  char userName[30];
+  char password[30];
+  read(nsd, userName, sizeof(userName));
+  read(nsd, password, sizeof(password));
+  int status = 0;
+  if(strcmp(userName,"admin") == 0 && strcmp(password,"admin") == 0){
+    status = 1;
+    write(nsd, &status, sizeof(status));
     char ch[1];
     read(nsd,ch,sizeof(ch));
     if(ch[0]=='1'){ // for modifying User accounts
@@ -638,6 +648,10 @@ void handleAdmin(int nsd){
     else if(ch[0]=='2'){ // for modifying Train info
         handleAdminTrain(nsd);
     }
+  }
+  else{
+    write(nsd, &status, sizeof(status));
+  }
 }
 
 

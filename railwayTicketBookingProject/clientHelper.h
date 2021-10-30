@@ -12,7 +12,7 @@ void showTrains(int sfd){
     struct train currTrain;
     int stillRead;
     printf("-----------------Available Trains --------------\n");
-    printf("Train details : trainId ----- trainName ------ seatsAvailable ------ active/inactive\n");
+    printf("trainId ----- trainName ------ seatsAvailable ------ active/inactive\n");
     while(1){
       read(sfd, &stillRead, sizeof(stillRead));
       if(stillRead==0){
@@ -42,7 +42,6 @@ void bookUserTicket(int sfd, int uid){
   // read info from server
   int status;
   read(sfd, &status, sizeof(status));
-  printf("I'm here\n");
   if(status==1){
     printf("Seats booked Successfully\n");
   }
@@ -341,16 +340,29 @@ void handleAdminTrainMenu(int sfd){
 }
 
 void handleAdminClient(int sfd){
-  printf("Enter 1 to modify/delete User Details \n");
-  printf("Enter 2 to add/modify/delete Train Details \n");
-  char ch[1];
-  scanf("%s", ch);
-  write(sfd, ch, sizeof(ch)); //
-  if(ch[0]=='1'){
-    handleAdminUserMenu(sfd);
-  }
-  else if(ch[0]=='2'){ // modify train details
-    handleAdminTrainMenu(sfd);
+  char userName[30];
+  char password[30];
+  printf("Enter admin's username to login: \n");
+  scanf("%s", userName);
+  printf("Enter password: \n");
+  scanf("%s", password);
+  int status;
+  write(sfd, userName, sizeof(userName));
+  write(sfd, password, sizeof(password));
+  read(sfd, &status, sizeof(status));
+  if(status==1){
+    printf("---------------Welcome Admin---------------\n");
+    printf("Enter 1 to modify/delete User Details \n");
+    printf("Enter 2 to add/modify/delete Train Details \n");
+    char ch[1];
+    scanf("%s", ch);
+    write(sfd, ch, sizeof(ch)); //
+    if(ch[0]=='1'){
+      handleAdminUserMenu(sfd);
+    }
+    else if(ch[0]=='2'){ // modify train details
+      handleAdminTrainMenu(sfd);
+    }
   }
   else{
     printf("Enter Correct Input\n");
