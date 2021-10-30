@@ -8,10 +8,12 @@ void handleAdminUser(int);
 void handleAdminTrain(int);
 void handleNormalUser(int);
 void handleLoggedInUser(int);
+void handleLoggedInAgent(int);
 void handleInitialLogin(int);
 void deleteAgentBookedTicket(int);
 void viewAgentBookings(int);
 void updateAgentBookings(int);
+int updateAgentTrainSeats(int,int,int);
 
 void showTrains(int nsd){
   int fd = open("database/trains.dat", O_RDWR , 0666);
@@ -264,8 +266,153 @@ void bookAgentTicket(int nsd){
   }
   write(nsd, &status, sizeof(status));
   close(fd);
+  handleLoggedInAgent(nsd);
+}
+
+void deleteAgentBookedTicket(int nsd){
+  struct booking bookedTicket; // new
+  struct booking temp; // original
+  struct flock bookingLock;
+
+  int status = 0;
+  read(nsd, &bookedTicket, sizeof(struct booking));
+  int fd = open("database/bookings.dat",O_RDWR);
+  while(read(fd, &temp, sizeof(struct booking))!=0){
+    if(temp.bookingId == bookedTicket.bookingId){
+
+      int change =  -(temp.seatsBooked); // add the original seats to the Train's available seats
+      int trainId = temp.trainId;
+      int canBook = updateAgentTrainSeats(nsd, trainId, change);
+      bookingLock.l_type = F_WRLCK;
+      bookingLock.l_whence = SEEK_SET;
+      bookingLock.l_start = 0; // lock offset
+      bookingLock.l_len = sizeof(struct booking); // lock all bytes
+      temp.status = 0;
+      lseek(fd, -sizeof(struct booking), SEEK_CUR);
+      int bs = fcntl(fd, F_SETLK, &bookingLock);
+      if(bs != -1){
+          write(fd , &temp, sizeof(struct booking));
+          status = 1;
+          bookingLock.l_type = F_UNLCK;
+          fcntl(fd, F_SETLK, &bookingLock);
+      }
+      break;
+    }
+  }
+  write(nsd, &status, sizeof(status));
+  close(fd);
   handleLoggedInUser(nsd);
 }
+
+void viewAgentBookings(int nsd){
+  struct booking userBookings;
+  read(nsd, &userBookings, sizeof(struct booking));
+  struct booking temp;
+  struct flock bookingLock;
+  int status = 0;
+  int fd = open("database/bookings.dat", O_RDWR , 0666);
+  bookingLock.l_type = F_RDLCK;
+  bookingLock.l_whence = SEEK_SET;
+  bookingLock.l_start = 0; // lock offset
+  bookingLock.l_len = 0; // lock all bytes
+  int bs = fcntl(fd, F_SETLK, &bookingLock);
+  int flag = 1;
+  int stillRead = 1;
+
+  if(bs != -1){
+    while(read(fd, &temp, sizeof(struct booking))!=0){
+      if(temp.userId == userBookings.userId){
+        status = 1;
+        if(status==1 && flag==1){
+          write(nsd, &status, sizeof(status));
+          flag = 10;
+        }
+        write(nsd, &stillRead,sizeof(stillRead));
+        write(nsd, &temp, sizeof(struct booking));
+      }
+    }
+    bookingLock.l_type = F_UNLCK;
+    fcntl(fd, F_SETLK, &bookingLock);
+  }
+
+  if(status==1){
+    stillRead=0;
+    write(nsd, &stillRead,sizeof(stillRead));
+  }
+  if(status==0){
+    write(nsd, &status, sizeof(status));
+  }
+  close(fd);
+  handleLoggedInAgent(nsd);
+}
+
+int updateAgentTrainSeats(int nsd, int trainId, int seatsChange){
+  struct flock trainLock;
+  int fd = open("database/trains.dat", O_RDWR);
+  struct train tempTrain;
+  int status = 0;
+  while(read(fd, &tempTrain, sizeof(struct train))){
+    if(tempTrain.trainId == trainId){
+      if(tempTrain.seatsCount >= seatsChange){ // check for the trainId and Available seats
+
+        trainLock.l_type = F_WRLCK;
+				trainLock.l_whence = SEEK_CUR;
+				trainLock.l_start = 0;
+				trainLock.l_len = sizeof(struct train);
+        lseek(fd, -sizeof(struct train), SEEK_CUR);
+        int ts = fcntl(fd, F_SETLK, &trainLock);
+        if(ts!=-1){
+          tempTrain.seatsCount = tempTrain.seatsCount - seatsChange; // decrement the available seats
+          write(fd , &tempTrain, sizeof(struct train));
+          status = 1;
+          trainLock.l_type = F_UNLCK;
+          fcntl(fd, F_SETLK, &trainLock);
+          break;
+        }
+      }
+    }
+  }
+  close(fd);
+  return status;
+}
+
+void updateAgentBookings(int nsd){
+  struct booking bookedTicket; // new
+  struct booking temp; // original
+
+  struct flock bookingLock;
+  int status = 0;
+  read(nsd, &bookedTicket, sizeof(struct booking));
+  int fd = open("database/bookings.dat",O_RDWR);
+  while(read(fd, &temp, sizeof(struct booking))!=0){
+    if(temp.bookingId == bookedTicket.bookingId){
+        int change = bookedTicket.seatsBooked - temp.seatsBooked;
+        int trainId = temp.trainId;
+        int canBook = updateAgentTrainSeats(nsd, trainId, change);
+        if(canBook==1){
+          bookingLock.l_type = F_WRLCK;
+          bookingLock.l_whence = SEEK_SET;
+          bookingLock.l_start = 0; // lock offset
+          bookingLock.l_len = sizeof(struct booking); //
+
+          lseek(fd, -sizeof(struct booking), SEEK_CUR);
+          int bs = fcntl(fd, F_SETLK, &bookingLock);
+          if(bs != -1){
+            temp.seatsBooked = bookedTicket.seatsBooked;
+            write(fd , &temp, sizeof(struct booking));
+            status = 1;
+            bookingLock.l_type = F_UNLCK;
+            fcntl(fd, F_SETLK, &bookingLock);
+          }
+        }
+        break;
+    }
+  }
+  write(nsd, &status, sizeof(status));
+  close(fd);
+  handleLoggedInAgent(nsd);
+}
+
 
 void handleLoggedInAgent(int nsd){
   char ch[1];
@@ -275,13 +422,13 @@ void handleLoggedInAgent(int nsd){
     bookAgentTicket(nsd);
   }
   else if(ch[0]=='2'){ // delete a booked ticket
-    //deleteAgentBookedTicket(nsd);
+    deleteAgentBookedTicket(nsd);
   }
   else if(ch[0]=='3'){ // view bookings
-    //viewAgentBookings(nsd);
+    viewAgentBookings(nsd);
   }
   else if(ch[0]=='4'){ // update a booked ticket
-    //updateAgentBookings(nsd);
+    updateAgentBookings(nsd);
   }
 }
 
