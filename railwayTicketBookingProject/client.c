@@ -9,7 +9,7 @@
 // then ./serv
 // then ./cli in a new terminal
 void main(){
-    int temp1, temp;
+    int temp2, temp3, temp4;
     struct sockaddr_in serv;
     int sfd = socket(AF_INET,SOCK_STREAM,0);
     if(sfd==-1){
